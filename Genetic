@@ -1,0 +1,68 @@
+import random
+
+# Step 1: Define the problem
+def fitness_function(x):
+    return x**2
+
+# Step 2: Create the initial population
+def create_population(size, lower_bound, upper_bound):
+    return [random.randint(lower_bound, upper_bound) for _ in range(size)]
+
+# Step 3: Selection (Roulette Wheel Selection)
+def selection(population, fitness_values):
+    total_fitness = sum(fitness_values)
+    probabilities = [f / total_fitness for f in fitness_values]
+    selected = random.choices(population, weights=probabilities, k=2)
+    return selected
+
+# Step 4: Crossover (Single Point Crossover)
+def crossover(parent1, parent2):
+    crossover_point = random.randint(1, len(bin(max(parent1, parent2))) - 3)  # Exclude '0b'
+    mask = (1 << crossover_point) - 1
+    child1 = (parent1 & mask) | (parent2 & ~mask)
+    child2 = (parent2 & mask) | (parent1 & ~mask)
+    return child1, child2
+
+# Step 5: Mutation (Bit Flip Mutation)
+def mutate(individual, mutation_rate, lower_bound, upper_bound):
+    if random.random() < mutation_rate:
+        bit_position = random.randint(0, len(bin(individual)) - 3)  # Exclude '0b'
+        individual ^= (1 << bit_position)  # Flip the bit at the position
+        individual = max(lower_bound, min(upper_bound, individual))  # Keep within bounds
+    return individual
+
+# Step 6: Genetic Algorithm
+def genetic_algorithm(
+    population_size, generations, lower_bound, upper_bound, mutation_rate=0.01
+):
+    population = create_population(population_size, lower_bound, upper_bound)
+
+    for generation in range(generations):
+        fitness_values = [fitness_function(ind) for ind in population]
+        new_population = []
+
+        while len(new_population) < population_size:
+            parent1, parent2 = selection(population, fitness_values)
+            child1, child2 = crossover(parent1, parent2)
+            child1 = mutate(child1, mutation_rate, lower_bound, upper_bound)
+            child2 = mutate(child2, mutation_rate, lower_bound, upper_bound)
+            new_population.extend([child1, child2])
+
+        # Update the population
+        population = new_population[:population_size]
+
+        # Log progress
+        best_individual = max(population, key=fitness_function)
+        print(
+            f"Generation {generation + 1}: Best Individual = {best_individual}, Fitness = {fitness_function(best_individual)}"
+        )
+
+    # Return the best solution
+    return max(population, key=fitness_function)
+
+# Step 7: Run the Genetic Algorithm
+if __name__ == "__main__":
+    best_solution = genetic_algorithm(
+        population_size=20, generations=50, lower_bound=0, upper_bound=31, mutation_rate=0.05
+    )
+    print(f"\nBest Solution: {best_solution}, Fitness: {fitness_function(best_solution)}")
